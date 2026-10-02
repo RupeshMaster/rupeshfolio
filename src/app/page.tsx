@@ -6,8 +6,11 @@ import {
   contactLinks,
   experience,
   headline,
+  initials,
+  location,
   name,
   notes,
+  role,
   projects,
   skills,
   stats,
@@ -15,6 +18,8 @@ import {
 
 type PageId = "intro" | "experience" | "projects" | "about" | "notes" | "contact";
 type Theme = "light" | "dark";
+
+const THEME_STORAGE_KEY = "portfolio-theme-preference";
 
 const navItems: Array<{ id: PageId; label: string; command: string }> = [
   { id: "intro", label: "intro.md", command: "intro" },
@@ -53,14 +58,28 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem("portfolio-theme") as Theme | null;
-    const preferredTheme = savedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    window.setTimeout(() => setTheme(preferredTheme), 0);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const getSystemTheme = (): Theme => (mediaQuery.matches ? "dark" : "light");
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const preferredTheme = savedTheme === "dark" || savedTheme === "light" ? savedTheme : getSystemTheme();
+
+    const themeTimeout = window.setTimeout(() => setTheme(preferredTheme), 0);
+
+    const followSystemTheme = () => {
+      if (!window.localStorage.getItem(THEME_STORAGE_KEY)) {
+        setTheme(getSystemTheme());
+      }
+    };
+
+    mediaQuery.addEventListener("change", followSystemTheme);
+    return () => {
+      window.clearTimeout(themeTimeout);
+      mediaQuery.removeEventListener("change", followSystemTheme);
+    };
   }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem("portfolio-theme", theme);
   }, [theme]);
 
   useEffect(() => {
@@ -93,7 +112,16 @@ export default function Home() {
     const query = paletteQuery.trim().toLowerCase();
     const commands = [
       ...navItems.map((item) => ({ label: `Open ${item.label}`, action: () => setCurrentPage(item.id) })),
-      { label: "Toggle theme", action: () => setTheme((value) => (value === "light" ? "dark" : "light")) },
+      {
+        label: "Toggle theme",
+        action: () => {
+          setTheme((value) => {
+            const nextTheme = value === "light" ? "dark" : "light";
+            window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+            return nextTheme;
+          });
+        },
+      },
       { label: "Open command prompt", action: () => setDockOpen(true) },
     ];
 
@@ -107,7 +135,11 @@ export default function Home() {
   }
 
   function toggleTheme() {
-    setTheme((value) => (value === "light" ? "dark" : "light"));
+    setTheme((value) => {
+      const nextTheme = value === "light" ? "dark" : "light";
+      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      return nextTheme;
+    });
   }
 
   function submitCommand(event: FormEvent<HTMLFormElement>) {
@@ -170,7 +202,7 @@ export default function Home() {
             <span className="traffic-light minimize" />
             <span className="traffic-light maximize" />
           </div>
-          <span className="window-title">portfolio.local — {currentFile}</span>
+          <span className="window-title">Rupesh Singh — {currentFile}</span>
           <div className="title-actions">
             <button type="button" className="chrome-button" onClick={() => setDockOpen((open) => !open)}>
               prompt
@@ -197,7 +229,7 @@ export default function Home() {
                 </button>
               ))}
             </nav>
-            <span className="sidebar-signature">YN</span>
+            <span className="sidebar-signature">{initials}</span>
           </aside>
 
           <div className="terminal-main">
@@ -287,7 +319,7 @@ function IntroPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
     <article className="page">
       <section className="content-block hero-block">
         <CommandLine>{`echo "${headline}"`}</CommandLine>
-        <p className="hero-eyebrow">I&apos;m {name}. I build thoughtful things.</p>
+        <p className="hero-eyebrow">I&apos;m {name} · {role} · {location}</p>
         <h1>{headline}</h1>
         <p className="lede">{bio}</p>
       </section>
@@ -306,12 +338,12 @@ function IntroPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
       <section className="content-block">
         <CommandLine>portfolio --focus</CommandLine>
         <div className="section-output">
-          <h2>What I care about</h2>
-          <p className="subtle">Turning complex ideas into clear, useful experiences.</p>
+          <h2>How I build</h2>
+          <p className="subtle">I start with the reason behind a problem, then build a clear path from idea to deployment.</p>
           <ul className="focus-list">
-            <li><b>Build with intent</b><span>Every detail should make the product easier to understand or use.</span></li>
-            <li><b>Stay curious</b><span>Learn quickly, ask better questions, and keep moving toward the real problem.</span></li>
-            <li><b>Make it human</b><span>Technology works best when it respects people, context, and attention.</span></li>
+            <li><b>Understand the why</b><span>Get the full context before choosing the technology or writing the first line of code.</span></li>
+            <li><b>Build end to end</b><span>Think about design, logic, performance, and deployment as one connected experience.</span></li>
+            <li><b>Automate the repeatable</b><span>Use tools like n8n to remove busywork and keep attention on the real problem.</span></li>
           </ul>
           <button type="button" className="text-link" onClick={() => onNavigate("projects")}>open projects.md →</button>
         </div>
@@ -339,7 +371,7 @@ function ExperiencePage() {
 function ProjectsPage() {
   return (
     <article className="page">
-      <PageHeading command="cat projects.md" title="Projects" description="Selected work and experiments. Replace these placeholders with your real projects." />
+      <PageHeading command="cat projects.md" title="Projects" description="Selected full-stack, automation, and AI projects from my GitHub work." />
       <section className="content-block"><div className="project-grid">{projects.map((project) => <article className="project-card" key={project.name}><div className="project-card-top"><span className="status-dot" />featured</div><h2>{project.name}</h2><p className="subtle">{project.description}</p><div className="tag-list">{project.technologies.map((technology) => <span key={technology}>{technology}</span>)}</div><a href={project.link} target="_blank" rel="noreferrer">view project ↗</a></article>)}</div></section>
     </article>
   );
@@ -349,7 +381,7 @@ function AboutPage() {
   return (
     <article className="page">
       <PageHeading command="cat about.md" title="About" description="The person behind the work." />
-      <section className="content-block"><CommandLine>portfolio --principles</CommandLine><div className="section-output"><h2>How I work</h2><p className="subtle">I believe the best work comes from combining clear thinking, honest feedback, and steady execution.</p><ul className="focus-list"><li><b>{skills[0]}</b><span>Use modern tools without losing sight of the people using the product.</span></li><li><b>Clarity over noise</b><span>Prefer a small, understandable system over a large collection of impressive features.</span></li><li><b>Progress over perfection</b><span>Ship, learn, improve, and keep the feedback loop short.</span></li></ul></div></section>
+      <section className="content-block"><CommandLine>portfolio --principles</CommandLine><div className="section-output"><h2>How I work</h2><p className="subtle">My process is simple: understand the why, choose the best how, and build something solid with a clean, efficient workflow.</p><ul className="focus-list"><li><b>{skills[0]}</b><span>Build complete experiences across the interface, backend, and deployment layers.</span></li><li><b>Clarity over hacks</b><span>Break complex problems into small steps and prefer readable solutions over quick fixes.</span></li><li><b>Stay in the flow</b><span>Keep learning, automate repetitive work, and use vibe coding to maintain momentum while building responsibly.</span></li></ul></div></section>
     </article>
   );
 }
@@ -358,7 +390,7 @@ function NotesPage() {
   return (
     <article className="page">
       <PageHeading command="cat notes.md" title="Notes" description="Fragments of thinking, learning, and building in public." />
-      <section className="content-block"><div className="notes-list">{notes.map((note, index) => <article className="note-entry" key={note}><span className="date-label">2026.0{index + 1}</span><h2>{note}</h2><p className="subtle">A short note will live here once your personal writing is added.</p></article>)}</div></section>
+      <section className="content-block"><div className="notes-list">{notes.map((note, index) => <article className="note-entry" key={note}><span className="date-label">principle 0{index + 1}</span><h2>{note}</h2><p className="subtle">A working principle I bring to products, systems, and team collaboration.</p></article>)}</div></section>
     </article>
   );
 }
@@ -367,7 +399,7 @@ function ContactPage() {
   return (
     <article className="page">
       <PageHeading command="cat contact.md" title="Contact" description="Have an idea, a project, or a thoughtful question? Let&apos;s talk." />
-      <section className="content-block"><div className="contact-card"><h2>Reach me</h2><p className="subtle">This first version uses direct links. A server-backed contact form can be added later with Resend.</p><div className="contact-links"><a href={contactLinks.email}>{"// email"}</a><a href={contactLinks.github} target="_blank" rel="noreferrer">{"// GitHub ↗"}</a><a href={contactLinks.linkedin} target="_blank" rel="noreferrer">{"// LinkedIn ↗"}</a></div></div></section>
+      <section className="content-block"><div className="contact-card"><h2>Reach me</h2><p className="subtle">I am currently interning at Genius AI Software Tech Pvt. Ltd. You can reach me by email, LinkedIn, or Instagram.</p><div className="contact-links"><a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contactLinks.email.replace("mailto:", ""))}`} target="_blank" rel="noreferrer">{"// email ↗"}</a><a href={contactLinks.github} target="_blank" rel="noreferrer">{"// GitHub ↗"}</a><a href={contactLinks.linkedin} target="_blank" rel="noreferrer">{"// LinkedIn ↗"}</a><a href={contactLinks.instagram} target="_blank" rel="noreferrer">{"// Instagram ↗"}</a></div></div></section>
     </article>
   );
 }
