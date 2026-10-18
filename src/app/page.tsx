@@ -399,7 +399,7 @@ function ContactPage() {
   return (
     <article className="page">
       <PageHeading command="cat contact.md" title="Contact" description="Have an idea, a project, or a thoughtful question? Let&apos;s talk." />
-      <section className="content-block"><div className="contact-card"><h2>Reach me</h2><p className="subtle">I am currently interning at Genius AI Software Tech Pvt. Ltd. You can reach me by email, LinkedIn, or Instagram.</p><div className="contact-links"><a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contactLinks.email.replace("mailto:", ""))}`} target="_blank" rel="noreferrer">{"// email ↗"}</a><a href={contactLinks.github} target="_blank" rel="noreferrer">{"// GitHub ↗"}</a><a href={contactLinks.linkedin} target="_blank" rel="noreferrer">{"// LinkedIn ↗"}</a><a href={contactLinks.instagram} target="_blank" rel="noreferrer">{"// Instagram ↗"}</a></div></div></section>
+      <section className="content-block"><div className="contact-card"><h2>Reach me</h2><p className="subtle">I am currently interning at Genius AI Software Tech Pvt. Ltd. You can reach me by email, LinkedIn, or Instagram.</p><div className="contact-links"><a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contactLinks.email.replace("mailto:", ""))}`} target="_blank" rel="noreferrer">{"// Email ↗"}</a><a href={contactLinks.github} target="_blank" rel="noreferrer">{"// GitHub ↗"}</a><a href={contactLinks.linkedin} target="_blank" rel="noreferrer">{"// LinkedIn ↗"}</a><a href={contactLinks.instagram} target="_blank" rel="noreferrer">{"// Instagram ↗"}</a></div></div></section>
     </article>
   );
 }
